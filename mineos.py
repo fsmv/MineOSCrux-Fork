@@ -1036,6 +1036,8 @@ class mc:
             
             p = re.compile('[^I]+INFO] Connected players:(.*)', re.IGNORECASE)
             match = p.match(output).group(1)
+            p = re.compile("\x1b\[([0-9]+?;?)+?m")
+            match = p.sub("", match)
             match = match.strip().replace(',', '').split(' ')
             match = filter(bool, match)
             if match:
