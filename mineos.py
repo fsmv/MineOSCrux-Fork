@@ -213,7 +213,24 @@ class mc:
                         logging.info('(None) All canarymod files extracted from %s.' % filename)
                 except:
                     raise ArchiveUnexpectedException('None', filename)
+        elif mod == 'tekkit':
+            import zipfile
+            filepath = os.path.join(instance.mc_path, instance.mineos_config['downloads']['tekkit_zip'])
+            filename = instance.mineos_config['downloads']['tekkit_zip']
+            mc.check(filename, instance.mineos_config['downloads']['tekkit_ziploc'])
+            try:
+                cpath = os.path.join(instance.mc_path, 'tekkit')
+                if not os.path.exists(cpath): os.makedirs(cpath)
+            except:
+                logging.warning('(None) unable to create directory %s', cpath)
 
+            if zipfile.is_zipfile(filepath):
+                try:
+                    with zipfile.ZipFile(filepath, mode='r') as zipchive:
+                        zipchive.extractall(os.path.join(instance.mc_path, 'tekkit'))
+                        logging.info('(None) All tekkit files extracted from %s.' % filename)
+                except:
+                    raise ArchiveUnexpectedException('None', filename)
         elif mod == 'c10t':
             import tarfile
             mc.check(instance.mineos_config['downloads']['c10t_tgz'], instance.mineos_config['downloads']['c10t_tgzloc'])
@@ -250,6 +267,8 @@ class mc:
             mc.updatesingle('canary')
         if instance.mineos_config['update']['c10t'] == 'true':
             mc.updatesingle('c10t')
+        if instance.mineos_config['update']['tekkit'] == 'true':
+            mc.updatesingle('tekkit')
 
         print '(MineOS) update server files complete.'
 
@@ -261,6 +280,15 @@ class mc:
             logging.info('(None) canary tree copied to %s' % self.cwd)
         except:
             raise GenericException(self.server_name, 'copying canary dependencies') 
+    
+    def update_tekkit(self):
+        import distutils.dir_util
+        
+        try:
+            distutils.dir_util.copy_tree(os.path.join(self.mc_path, 'tekkit'), self.cwd)
+            logging.info('(None) tekkit tree copied to %s' % self.cwd)
+        except:
+            raise GenericException(self.server_name, 'copying tekkit dependencies')
 
     def createdirs(self):
         for coredir in [self.cwd, self.bwd, self.awd, self.swd, self.pwd]:
@@ -342,9 +370,12 @@ class mc:
             config.set("java", "java_bin", self.mineos_config['template']['java_bin'])
             config.set("java", "java_tweaks", self.mineos_config['template']['java_tweaks'])
 
-            if arguments.get('server_jar') == 'craftbukkit-0.0.1-SNAPSHOT.jar':
+            if arguments.get('server_jar') == 'craftbukkit.jar':
                 config.set("java", "server_jar", self.mineos_config['downloads']['bukkit_jar'])
                 config.set("java", "server_jar_args", self.mineos_config['template']['bukkit_args'])
+            elif arguments.get('server_jar') == 'Tekkit.jar':
+                config.set("java", "server_jar", 'Tekkit.jar')
+                config.set("java", "server_jar_args", self.mineos_config['template']['tekkit_args'])
             elif arguments.get('server_jar') == 'CanaryMod.jar':
                 config.set("java", "server_jar", 'CanaryMod.jar')
                 config.set("java", "server_jar_args", self.mineos_config['template']['canary_args'])
@@ -412,6 +443,9 @@ class mc:
 
             if self.server_config['java']['server_jar'] == 'CanaryMod.jar':
                 self.update_canary()
+                
+            if self.server_config['java']['server_jar'] == 'Tekkit.jar':
+                self.update_tekkit()
             
             if status == 'template':
                 logging.info('(%s) no server.properties exists, creating temp...', self.server_name)
@@ -453,6 +487,8 @@ class mc:
                         logging.debug('(%s) deleted %s', version_txt)
                     else:
                         logging.debug('(%s) did not delete %s', version_txt)
+                elif self.server_config['java']['server_jar'] == 'Tekkit.jar':
+                    server_jar_path = os.path.join(self.cwd, self.server_config['java']['server_jar'])
                 else:
                     server_jar_path = os.path.join(self.mineos_config['paths']['mc_path'], self.server_config['java']['server_jar'])
 
@@ -1313,6 +1349,8 @@ class mc:
 
         if os.access(os.path.join(mc().mineos_config['paths']['mc_path'], 'canary', 'CanaryMod.jar'), os.F_OK):
             yield 'CanaryMod.jar'
+        if os.access(os.path.join(mc().mineos_config['paths']['mc_path'], 'tekkit', 'Tekkit.jar'), os.F_OK):
+            yield 'Tekkit.jar'
                 
 class ConfigNotFoundException(Exception):
     '''mineos.config not found in pythons cwd'''

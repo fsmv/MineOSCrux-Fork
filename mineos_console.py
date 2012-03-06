@@ -32,6 +32,8 @@ try:
         mineos.mc.update_mineos()
     elif argv[1] == 'update_canary':
         mineos.mc(argv[2]).update_canary()
+    elif argv[1] == 'update_tekkit':
+        mineos.mc(argv[2]).update_tekkit()
     elif argv[1] == 'backup':
         mineos.mc(argv[2]).backup()
     elif argv[1] == 'backup_status':

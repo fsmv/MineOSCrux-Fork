@@ -115,6 +115,7 @@ def display_initial():
     print '<pre>'
     for filename in [mineos.mc().mineos_config['downloads']['mc_jar'],
                      mineos.mc().mineos_config['downloads']['bukkit_jar'],
+                     mineos.mc().mineos_config['downloads']['tekkit_zip'],
                      mineos.mc().mineos_config['downloads']['canary_zip'],
                      mineos.mc().mineos_config['downloads']['c10t_tgz']]:
         filepath = os.path.join(mineos.mc().mineos_config['paths']['mc_path'], filename)
@@ -459,6 +460,13 @@ def display_overview():
         print mineos.mc.list_build_date(filepath), filename
     else:
         print '----------', filename
+        
+    filename = mineos.mc().mineos_config['downloads']['tekkit_jar']
+    filepath = os.path.join(mineos.mc().mineos_config['paths']['mc_path'], 'tekkit', filename)
+    if os.access(filepath, os.F_OK):
+        print mineos.mc.list_build_date(filepath), filename
+    else:
+        print '----------', filename
 
     print
     print '<b>MineOS Scripts</b>:', '<a href="#" class="updatemos">%s</a>' % 'Update MineOS'
@@ -555,6 +563,12 @@ def display_jars():
             </select></td>
         </tr>
         <tr> 
+          <td colspan="2"><label for="tekkit">tekkit</label></td>
+          <td colspan="2"><select name="tekkit" id="tekkit" tabindex="6">
+              %s
+            </select></td>
+        </tr>
+        <tr> 
           <td colspan="2"><label for="canary">canary</label></td>
           <td colspan="2"><select name="canary" id="canary" tabindex="6">
               %s
@@ -576,6 +590,7 @@ def display_jars():
     </form>''' % (selects_mod('pure'),
                   selects_mod('bukkit'),
                   selects_mod('canary'),
+                  selects_mod('tekkit'),
                   selects_mod('c10t'))
 
 def display_createnew():
