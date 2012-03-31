@@ -5,7 +5,7 @@
 
 __author__ = "William Dizon"
 __license__ = "GNU GPL v3.0"
-__version__ = "0.4.11a"
+__version__ = "0.4.11b"
 __email__ = "wdchromium@gmail.com"
 
 import os
@@ -125,7 +125,7 @@ class mc:
         logging.info('(None) <update_mineos>')
         
         filename = 'update.sh'
-        update_url = 'http://minecraft.codeemo.com/crux/rsync/usr/games/minecraft/%s' % filename
+        update_url = 'http://minecraft.codeemo.com/crux/mineos-scripts/%s' % filename
                 
         mc.check(filename, update_url)
 
@@ -918,7 +918,7 @@ class mc:
                 os.system(execute_command)
 
             with open(self.cwd + '/%s.md5' % worldname, 'w') as md5file:
-                for mcr in glob.iglob(os.path.join(self.cwd, relpath) + '/*.mcr'):
+                for mcr in glob.iglob(os.path.join(self.cwd, relpath) + '/*.mca'):
                     md5file.write('%s %s\n' % (mcr, md5sum(mcr)))
                 md5file.close()
 
@@ -999,13 +999,18 @@ class mc:
             output = p2.communicate()[0]
             
             p = re.compile('[^I]+INFO] Connected players:(.*)', re.IGNORECASE)
-            match = p.match(output).group(1)
-            match = match.strip().replace(',', '').split(' ')
-            match = filter(bool, match)
-            if match:
-                return match
+            match = None
 
-            return []
+            try:
+                match = p.match(output).group(1)
+                match = match.strip().replace(',', '').split(' ')
+                match.remove('0]m')
+            except ValueError:
+                pass
+            except AttributeError:
+                return []
+            
+            return filter(bool, match) or []
         else:
             logging.error('(%s) server is not up--no active players', self.server_name)
             return []

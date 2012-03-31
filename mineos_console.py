@@ -5,7 +5,7 @@
 
 __author__ = "William Dizon"
 __license__ = "GNU GPL v3.0"
-__version__ = "0.4.11a"
+__version__ = "0.4.11b"
 __email__ = "wdchromium@gmail.com"
 
 import mineos
