@@ -794,21 +794,24 @@ class mc:
             raise GenericException(self.server_name, 'import')
 
     def mapserver(self):
-        output = ''
+        output = []
         
-        if self.server_config['mapping']['map_c10t'] == 'true':
-            print '[c10t] (working...)\n'
-            output += mapworld(self)
-            print output
-        if self.server_config['mapping']['map_pigmap'] == 'true':
-            print '[pigmap] (working...)\n'
-            output += pigmap(self)
-            print output
+        try:
+            if self.server_config['mapping']['map_c10t'] == 'true':
+                print '[c10t] (working...)\n'
+                output.append(mapworld(self))
+                print output
+            if self.server_config['mapping']['map_pigmap'] == 'true':
+                print '[pigmap] (working...)\n'
+                output.append(pigmap(self))
+                print output
+        except:
+            raise mineos.NoOnMappingSelectionException(self.server_name, os.path.join(newinst.cwd, 'server.config'))
         
-        if output == '':
-            output = 'No mapping software enabled'
+        if not output:
+            output.append('No mapping software enabled')
             
-        print output
+        print ' '.join(output)
 
     def mapworld(self):
         def get_immediate_subdirectories(dir):
@@ -1533,5 +1536,12 @@ class NoOnRebootSectionException(Exception):
         mc.config_section_add(sc, 'onreboot')
         mc.config_alter(sc, "onreboot", "restore", 'false', server_name)
         mc.config_alter(sc, "onreboot", "start", 'false', server_name)
+
+class NoMappingSelectionException(Exception):
+    '''Mapping choices do not exist in server.config'''
+    def __init__(self, server_name, sc):
+        Exception.__init__(self)
+        mc.config_alter(sc, "mapping", "map_c10t", 'false', server_name)
+        mc.config_alter(sc, "mapping", "map_pigmap", 'false', server_name)
 
 

@@ -750,7 +750,25 @@ def display_server_config(server_name):
             else:
                 selects.append('<option value="%s">%s</option>' % (mods, mods))
         return ' '.join(selects)
-
+    
+    def selects_mapping(server_name, option):
+        selects = []
+        
+        newinst = mineos.mc(server_name)
+        
+        try:
+            if newinst.server_config['mapping']['map_%s' % option] == 'true':
+                selects.append('<option value="true" SELECTED>true</option>')
+                selects.append('<option value="false">false</option>')
+            else:
+                selects.append('<option value="true">true</option>')
+                selects.append('<option value="false" SELECTED>false</option>')
+        except KeyError:
+            raise mineos.NoOnMappingSelectionException(server_name, os.path.join(newinst.cwd, 'server.config'))
+            selects.append('<option value="true">true</option>')
+            selects.append('<option value="false" SELECTED>false</option>')
+        return ' '.join(selects)
+            
     def selects_onboot(server_name, activity):
         selects = []
 
@@ -838,6 +856,18 @@ def display_server_config(server_name):
             </select></td>
         </tr>
         <tr> 
+          <td colspan="2"><label for="map_c10t">Use c10t</label></td>
+          <td colspan="2"><select name="map_c10t" id="map_c10t" tabindex="6">
+              %s
+            </select></td>
+        </tr>
+        <tr> 
+          <td colspan="2"><label for="map_pigmap">Use pigmap</label></td>
+          <td colspan="2"><select name="map_pigmap" id="map_pigmap" tabindex="6">
+              %s
+            </select></td>
+        </tr>
+        <tr> 
           <td colspan="2">&nbsp</td>
           <td colspan="2"></td>
         </tr>
@@ -867,6 +897,8 @@ def display_server_config(server_name):
                  selects_crontab(server_name, 'archive'),
                  selects_crontab(server_name, 'backup'),
                  selects_crontab(server_name, 'map'),
+                 selects_mapping(server_name, 'c10t'),
+                 selects_mapping(server_name, 'pigmap'),
                  selects_onboot(server_name, 'restore'),
                  selects_onboot(server_name, 'start'))
 
