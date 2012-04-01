@@ -631,6 +631,7 @@ class mc:
             status == self.status()
 
         if status == 'up':
+            self.say("Starting backup...")
             self.commit()
             self.commit_off()
             execute_command = 'nice -n 10 rdiff-backup %s/ %s' % (self.cwd, self.bwd)
@@ -638,6 +639,7 @@ class mc:
             output = subprocess.check_output(shlex.split(execute_command))
             #print str(output).replace('\n', mc.linebreak)
             self.commit_on()
+            self.say("Backup complete.")
             logging.info('(%s) backup complete', self.server_name)
             print '(%s) backup complete.' % self.server_name
         elif status in ['down', 'unclean']:
@@ -809,6 +811,8 @@ class mc:
             status == self.status()
 
         if status in ['down', 'unclean', 'up']:
+            if status == 'up':
+                self.say("Start mapping...");
             styles = []
             if self.server_config['mapping']['map_standard'] == 'true':
                 styles.append(('standard',      '.png',               '-M 512 -s -m 1'))
@@ -845,6 +849,9 @@ class mc:
             for execute_command in lines:
                 try:
                     logging.info('(%s) %s', self.server_name, execute_command)  
+                    if status == 'up':
+                        self.say('Mapping %s...' % execute_command.split(' '))[5]
+
                     output = subprocess.check_output(shlex.split(execute_command))
                     #print str(output).replace('\n', mc.linebreak)
                 except:
@@ -855,6 +862,8 @@ class mc:
 
             if lines:
                 print '(%s) mapping complete: %s' % (self.server_name, ', '.join(maptype[0] for maptype in styles))
+                if status == 'up':
+                    self.say("Mapping complete.");
             else:
                 raise NoWorldFilesException(self.server_name)
             
@@ -870,13 +879,13 @@ class mc:
         def pigmapper(inputpath, outputpath, diff=None):
             if diff:
                 pigmap_args = ''
-                nice = 'nice -x -n 15 %s -i %s -o %s -g %s -r %s %s' % ('./pigmap',
-                                                                     inputpath,
-                                                                     outputpath,
-                                                                     os.path.join(mc.mc_path, 'pigmap'),
-                                                                     os.path.join(mc.mc_path, diff),
-                                                                     pigmap_args)
-                return 'ionice -c3 %s -i %s -o %s -g %s -r %s %s' % ('./pigmap',
+                #nice = '%s -i %s -o %s -g %s -r %s %s' % ('./pigmap',
+                #                                                     inputpath,
+                #                                                     outputpath,
+                #                                                     os.path.join(mc.mc_path, 'pigmap'),
+                #                                                     os.path.join(mc.mc_path, diff),
+                #                                                     pigmap_args)
+                return '%s -i %s -o %s -g %s -r %s %s' % ('./pigmap',
                                                                      inputpath,
                                                                      outputpath,
                                                                      os.path.join(mc.mc_path, 'pigmap'),
@@ -884,7 +893,7 @@ class mc:
                                                                      pigmap_args)
             else:
                 pigmap_args = '-B 6 -T 1 -Z 10'
-                return 'nice -n 15 %s -i %s -o %s -g %s %s' % ('./pigmap',
+                return '%s -i %s -o %s -g %s %s' % ('./pigmap',
                                                                inputpath,
                                                                outputpath,
                                                                os.path.join(mc.mc_path, 'pigmap'),
@@ -902,6 +911,10 @@ class mc:
             return md5
 
         logging.info('(%s) <pigmap>', self.server_name)
+        if self.status() == 'up':
+            self.commit()
+            self.commit_off()
+            self.say("Start mapping...");
 
         for relpath in self.find_regiondirs():
             worldname = relpath.split('/')[0]
@@ -942,21 +955,50 @@ class mc:
                 execute_command = pigmapper(os.path.join(self.cwd, adjustedpath),
                                             os.path.join(self.mwd, adjustedpath),
                                             os.path.join(self.cwd, '%s.diff' % worldname))
-                logging.info('(%s) %s', self.server_name, execute_command)
+                #logging.info('(%s) %s', self.server_name, execute_command)
                 os.chdir(os.path.join(self.mc_path, 'pigmap'))
-                os.system(execute_command)       
+                #os.system(execute_command)
+                #try:
+                logging.info('(%s) %s', self.server_name, execute_command)  
+                if self.status() == 'up':
+                    self.say('Mapping %s...' % worldname);
+                    #output = subprocess.check_output(shlex.split(execute_command))
+                child = subprocess.Popen(execute_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                child.wait()
+                output = child.communicate()[0]
+                print output
+                #except:
+                #    logging.error('(%s) %s', self.server_name, 'error creating map render')       
             else:                    
                 execute_command = pigmapper(os.path.join(self.cwd, adjustedpath),
                                             os.path.join(self.mwd, adjustedpath),
                                             None)
-                logging.info('(%s) %s', self.server_name, execute_command)
+                #logging.info('(%s) %s', self.server_name, execute_command)
                 os.chdir(os.path.join(self.mc_path, 'pigmap'))
-                os.system(execute_command)
+                #os.system(execute_command)
+                #try:
+                logging.info('(%s) %s', self.server_name, execute_command)
+                if self.status() == 'up':
+                    self.say('Mapping %s...' % worldname);  
+                    #output = subprocess.check_output(shlex.split(execute_command))
+                child = subprocess.Popen(execute_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                child.wait()
+                output = child.communicate()[0] 
+                print output
+                    #print str(output).replace('\n', mc.linebreak)
+                #except:
+                #    logging.error('(%s) %s', self.server_name, 'error creating map render')
 
             with open(self.cwd + '/%s.md5' % worldname, 'w') as md5file:
                 for mcr in glob.iglob(os.path.join(self.cwd, relpath) + '/*.mca'):
                     md5file.write('%s %s\n' % (mcr, md5sum(mcr)))
                 md5file.close()
+                
+        if self.status() == 'up':
+            self.commit_on()
+            self.say("Mapping complete.");
+                
+        print "Done."
 
     def find_regiondirs(self):
         import glob
