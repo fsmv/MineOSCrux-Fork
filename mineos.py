@@ -793,6 +793,23 @@ class mc:
             logging.error('(%s) destination directory must be empty (template exists)--no action taken', self.server_name)
             raise GenericException(self.server_name, 'import')
 
+    def mapserver(self):
+        output = ''
+        
+        if self.server_config['mapping']['map_c10t'] == 'true':
+            print '[c10t] (working...)\n'
+            output += mapworld(self)
+            print output
+        if self.server_config['mapping']['map_pigmap'] == 'true':
+            print '[pigmap] (working...)\n'
+            output += pigmap(self)
+            print output
+        
+        if output == '':
+            output = 'No mapping software enabled'
+            
+        print output
+
     def mapworld(self):
         def get_immediate_subdirectories(dir):
             return [name for name in os.listdir(dir)

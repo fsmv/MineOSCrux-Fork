@@ -1062,7 +1062,7 @@ try:
         elif form['action'] == 'restore':
             instance.restore(form['steps'], True)
         elif form['action'] == 'map':
-            instance.mapworld()
+            instance.mapserver()
         elif form['action'] == 'rename':
             instance.rename(form['newname'])
         elif form['action'] == 'import':
