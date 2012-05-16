@@ -10,17 +10,20 @@ Instructions
 
 These scripts are modifications to the ones included in [MineOS Crux](http://minecraft.codeemo.com/). It's possible to use them elsewhere but they work with the systems in place with the distribution.
  
-To install, run the following commands as root:
+To install, run the following commands:
 
 ```shell
-# cd /usr/games/minecraft/
-# wget https://github.com/Fsmv/MineOSCrux-Fork/tarball/master
-# tar -xvf master   
-# cd Fsmv-MineOSCrux-Fork-[commit hash]
-# mv *.py ../
-# cd ../
-# rm -rf Fsmv-MineOSCrux-Form-[commit hash]/
+cd /usr/games/minecraft/
+wget https://github.com/Fsmv/MineOSCrux-Fork/tarball/master
+tar -xvf master   
+cd Fsmv-MineOSCrux-Fork-[commit hash]
+mv *.py ../
+cd ../
+rm -rf Fsmv-MineOSCrux-Form-[commit hash]/
+chmod +x *.py
 ```
+
+If it you would like to revert to the official scripts there should be a script named update.sh included in mineos crux. When you run that it will download new scripts overwriting mine. 
 
 Finally, edit the config files /usr/games/minecraft/mineos.config and /home/mc/servers/[server name]/server.config to match the example scripts
  
