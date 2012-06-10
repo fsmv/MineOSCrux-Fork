@@ -5,7 +5,7 @@
 
 __author__ = "William Dizon"
 __license__ = "GNU GPL v3.0"
-__version__ = "0.4.11b"
+__version__ = "0.4.12"
 __email__ = "wdchromium@gmail.com"
 
 import os
@@ -40,26 +40,23 @@ class mc:
             logging.critical('(%s) mineos.config not found in present working directory--unable to continue', self.server_name)
             raise ConfigNotFoundException
             
+        mc.update_configs()
+            
         if self.mineos_config and server_name:
             self.cwd = os.path.join(self.mineos_config['paths']['world_path'], server_name)
             self.bwd = os.path.join(self.mineos_config['paths']['backup_path'], server_name)
             self.awd = os.path.join(self.mineos_config['paths']['archive_path'], server_name)
             self.swd = os.path.join(self.mineos_config['paths']['snapshot_path'], server_name)
             self.pwd = os.path.join(self.cwd, 'plugins')
+            self.mwd = os.path.join(self.mineos_config['paths']['http_snapshot_path'], self.server_name)
 
             self.sp = os.path.join(self.cwd, 'server.properties')
             self.sc = os.path.join(self.cwd, 'server.config')
             
             try:
-                snapshotpath = self.mineos_config['paths']['http_snapshot_path']
-            except KeyError:
-                snapshotpath = '/var/www/hiawatha/pigmap'
-                mc.config_add(os.path.join(self.mc_path, 'mineos.config'), 'paths', 'http_snapshot_path', snapshotpath, self.server_name)
-                if not os.path.exists(snapshotpath): os.makedirs(snapshotpath)
-            finally:
-                self.mwd = os.path.join(snapshotpath, server_name)
-            
-            self.server_config = mc.config_import(os.path.join(self.cwd, 'server.config'))
+                self.server_config = mc.config_import(os.path.join(self.cwd, 'server.config'))
+            except:
+                self.server_config = None
 
     def status(self):
         def check_sanity():
@@ -125,7 +122,7 @@ class mc:
         logging.info('(None) <update_mineos>')
         
         filename = 'update.sh'
-        update_url = 'http://minecraft.codeemo.com/crux/mineos-scripts/%s' % filename
+        update_url = 'http://minecraft.codeemo.com/rsync/usr/games/minecraft/%s' % filename
                 
         mc.check(filename, update_url)
 
@@ -133,7 +130,7 @@ class mc:
         os.chdir(mc_path)
         os.chmod(os.path.join(mc_path, filename), 0755)
         
-        execute_command = os.path.join(mc_path, 'update.sh')
+        execute_command = os.path.join(mc_path, filename)
         logging.info('%s', execute_command)
         output = subprocess.check_output(shlex.split(execute_command))
         print '(MineOS) update complete.' 
@@ -214,6 +211,26 @@ class mc:
                 except:
                     raise ArchiveUnexpectedException('None', filename)
 
+        elif mod == 'tekkit':
+            import zipfile
+            filepath = os.path.join(instance.mc_path, instance.mineos_config['downloads']['tekkit_zip'])
+            filename = instance.mineos_config['downloads']['tekkit_zip']
+            mc.check(filename, instance.mineos_config['downloads']['tekkit_ziploc'])
+
+            try:
+                cpath = os.path.join(instance.mc_path, 'tekkit')
+                if not os.path.exists(cpath): os.makedirs(cpath)
+            except:
+                logging.warning('(None) unable to create directory %s', cpath)
+
+            if zipfile.is_zipfile(filepath):
+                try:
+                    with zipfile.ZipFile(filepath, mode='r') as zipchive:
+                        zipchive.extractall(os.path.join(instance.mc_path, 'tekkit'))
+                        logging.info('(None) All tekkit files extracted from %s.' % filename)
+                except:
+                    raise ArchiveUnexpectedException('None', filename)
+
         elif mod == 'c10t':
             import tarfile
             mc.check(instance.mineos_config['downloads']['c10t_tgz'], instance.mineos_config['downloads']['c10t_tgzloc'])
@@ -248,6 +265,8 @@ class mc:
             mc.updatesingle('bukkit')
         if instance.mineos_config['update']['canary'] == 'true':
             mc.updatesingle('canary')
+        if instance.mineos_config['update']['tekkit'] == 'true':
+            mc.updatesingle('tekkit')
         if instance.mineos_config['update']['c10t'] == 'true':
             mc.updatesingle('c10t')
 
@@ -261,6 +280,15 @@ class mc:
             logging.info('(None) canary tree copied to %s' % self.cwd)
         except:
             raise GenericException(self.server_name, 'copying canary dependencies') 
+
+    def update_tekkit(self):
+        import distutils.dir_util
+            
+        try:
+            distutils.dir_util.copy_tree(os.path.join(self.mc_path, 'tekkit'), self.cwd)
+            logging.info('(None) tekkit tree copied to %s' % self.cwd)
+        except:
+            raise GenericException(self.server_name, 'copying tekkit dependencies') 
 
     def createdirs(self):
         for coredir in [self.cwd, self.bwd, self.awd, self.swd, self.pwd]:
@@ -336,6 +364,8 @@ class mc:
             config.set("mapping", "map_oblique_cave", 'true')
             config.set("mapping", "map_hell", 'true')
             config.set("mapping", "map_hell_oblique", 'true')
+            config.set("mapping", "pigmap_args", '-B 6 -T 1 -Z 10')
+            config.set("mapping", "pigmap_args_incr", '')
 
             config.add_section("java")
             config.set("java", "java_path", self.mineos_config['template']['java_path'])
@@ -348,12 +378,15 @@ class mc:
             elif arguments.get('server_jar') == 'CanaryMod.jar':
                 config.set("java", "server_jar", 'CanaryMod.jar')
                 config.set("java", "server_jar_args", self.mineos_config['template']['canary_args'])
+            elif arguments.get('server_jar') == 'Tekkit.jar':
+                config.set("java", "server_jar", 'Tekkit.jar')
+                config.set("java", "server_jar_args", self.mineos_config['template']['tekkit_args'])
             elif arguments.get('server_jar') == 'minecraft_server.jar':
                 config.set("java", "server_jar", self.mineos_config['downloads']['mc_jar'])
                 config.set("java", "server_jar_args", self.mineos_config['template']['pure_args'])
             else:
-                config.set("java", "server_jar", arguments.get('server_jar'))
-                config.set("java", "server_jar_args", self.mineos_config['template']['pure_args'])                
+                config.set("java", "server_jar", 'minecraft_server.jar')
+                config.set("java", "server_jar_args", self.mineos_config['template']['pure_args'])    
 
             if status == 'foreign':
                 sp = os.path.join(self.cwd, 'server.properties')
@@ -409,9 +442,11 @@ class mc:
         sc = os.path.join(self.cwd, 'server.config')
 
         if status in ['down', 'template']:
-
             if self.server_config['java']['server_jar'] == 'CanaryMod.jar':
                 self.update_canary()
+
+            if self.server_config['java']['server_jar'] == 'Tekkit.jar':
+                self.update_tekkit()
             
             if status == 'template':
                 logging.info('(%s) no server.properties exists, creating temp...', self.server_name)
@@ -453,6 +488,8 @@ class mc:
                         logging.debug('(%s) deleted %s', version_txt)
                     else:
                         logging.debug('(%s) did not delete %s', version_txt)
+                elif self.server_config['java']['server_jar'] == 'Tekkit.jar':
+                    server_jar_path = os.path.join(self.cwd, self.server_config['java']['server_jar'])
                 else:
                     server_jar_path = os.path.join(self.mineos_config['paths']['mc_path'], self.server_config['java']['server_jar'])
 
@@ -833,7 +870,10 @@ class mc:
         import string, glob
         def pigmapper(inputpath, outputpath, diff=None):
             if diff:
-                pigmap_args = ''
+                try:
+                    pigmap_args = self.mineos_config['template']['pigmap_args_incr']
+                except KeyError:
+                    pigmap_args = ''
                 nice = 'nice -x -n 15 %s -i %s -o %s -g %s -r %s %s' % ('./pigmap',
                                                                      inputpath,
                                                                      outputpath,
@@ -847,7 +887,10 @@ class mc:
                                                                      os.path.join(mc.mc_path, diff),
                                                                      pigmap_args)
             else:
-                pigmap_args = '-B 6 -T 1 -Z 10'
+                try:
+                    pigmap_args = self.mineos_config['template']['pigmap_args']
+                except KeyError:
+                    pigmap_args = '-B 6 -T 1 -Z 10'
                 return 'nice -n 15 %s -i %s -o %s -g %s %s' % ('./pigmap',
                                                                inputpath,
                                                                outputpath,
@@ -891,7 +934,7 @@ class mc:
                     logging.error('(%s) pigmap destdir found but no .md5 file', self.server_name)
 
                 with open(self.cwd + '/%s.diff' % worldname, 'w') as md5file:
-                    for mcr in glob.glob(os.path.join(self.cwd, relpath) + '/*.mcr'):
+                    for mcr in glob.glob(os.path.join(self.cwd, relpath) + '/*.mca'):
                         if mcr in md5dict:
                             if md5dict[mcr] != md5sum(mcr):
                                 md5file.write('%s\n' % mcr)
@@ -1004,7 +1047,7 @@ class mc:
             try:
                 match = p.match(output).group(1)
                 match = match.strip().replace(',', '').split(' ')
-                match.remove('0]m')
+                match.remove('[0m')
             except ValueError:
                 pass
             except AttributeError:
@@ -1082,6 +1125,40 @@ class mc:
             print '(%s) existing logs gzipped and server.log emptied' % self.server_name
         else:
             raise ServerRunningException(self.server_name, 'gzipping server.log')
+
+    @staticmethod
+    def update_configs():
+        mineos_config = mc.config_import('mineos.config')
+        mc_path = mineos_config['paths']['mc_path']
+        
+        try:
+            snapshotpath = mineos_config['paths']['http_snapshot_path']
+        except KeyError:
+            snapshotpath = '/var/www/hiawatha/pigmap'
+            mc.config_add(os.path.join(mc_path, 'mineos.config'), 'paths', 'http_snapshot_path', snapshotpath)
+            if not os.path.exists(snapshotpath): os.makedirs(snapshotpath)
+
+        #update bukkit
+        if mineos_config['downloads']['bukkit_jar'] == 'craftbukkit-0.0.1-SNAPSHOT.jar':
+            mc.config_alter(os.path.join(mc_path, 'mineos.config'), 'downloads', 'bukkit_jar', 'craftbukkit.jar')
+            mc.config_alter(os.path.join(mc_path, 'mineos.config'), 'downloads', 'bukkit_jarloc', 'http://dl.bukkit.org/latest-rb/craftbukkit.jar')   
+
+        #add tekkit
+        try:
+            tekkitpath = mineos_config['downloads']['tekkit_jar']
+        except KeyError:
+            mc.config_add(os.path.join(mc_path, 'mineos.config'), 'downloads', 'tekkit_jar', 'Tekkit.jar')
+            mc.config_add(os.path.join(mc_path, 'mineos.config'), 'downloads', 'tekkit_zip', 'Tekkit_Server_2.1.1.zip')
+            mc.config_add(os.path.join(mc_path, 'mineos.config'), 'downloads', 'tekkit_ziploc', 'http://mirror.technicpack.net/files/Tekkit_Server_2.1.1.zip')
+            mc.config_add(os.path.join(mc_path, 'mineos.config'), 'template', 'tekkit_args', 'nogui')
+            mc.config_add(os.path.join(mc_path, 'mineos.config'), 'update', 'tekkit', 'false')
+
+        #pigmap args
+        try:
+            pigmapargs = mineos_config['template']['pigmap_args']
+        except KeyError:
+            mc.config_add(os.path.join(mc_path, 'mineos.config'), 'template', 'pigmap_args', '-B 6 -T 1 -Z 10')
+            mc.config_add(os.path.join(mc_path, 'mineos.config'), 'template', 'pigmap_args_incr', '')
 
     @staticmethod
     def list_build_date(filepath):
@@ -1318,6 +1395,8 @@ class mc:
 
         if os.access(os.path.join(mc().mineos_config['paths']['mc_path'], 'canary', 'CanaryMod.jar'), os.F_OK):
             yield 'CanaryMod.jar'
+        if os.access(os.path.join(mc().mineos_config['paths']['mc_path'], 'tekkit', 'Tekkit.jar'), os.F_OK):
+            yield 'Tekkit.jar'
                 
 class ConfigNotFoundException(Exception):
     '''mineos.config not found in pythons cwd'''

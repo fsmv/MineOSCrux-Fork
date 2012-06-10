@@ -5,7 +5,7 @@
 
 __author__ = "William Dizon"
 __license__ = "GNU GPL v3.0"
-__version__ = "0.4.11b"
+__version__ = "0.4.12"
 __email__ = "wdchromium@gmail.com"
 
 print "Content-Type: text/html"
@@ -116,6 +116,7 @@ def display_initial():
     for filename in [mineos.mc().mineos_config['downloads']['mc_jar'],
                      mineos.mc().mineos_config['downloads']['bukkit_jar'],
                      mineos.mc().mineos_config['downloads']['canary_zip'],
+                     mineos.mc().mineos_config['downloads']['tekkit_zip'],
                      mineos.mc().mineos_config['downloads']['c10t_tgz']]:
         filepath = os.path.join(mineos.mc().mineos_config['paths']['mc_path'], filename)
         if os.access(filepath, os.F_OK):
@@ -184,9 +185,12 @@ def display_status():
                                                                 '{:<12}'.format(port),
                                                                 colors.get(status)),
 
-        instance = mineos.mc(server)        
-        print '{:<8}'.format('%s/%s' % (len(instance.list_players()),
-                                        instance.server_config['minecraft']['max_players'])),
+        try:
+            instance = mineos.mc(server)        
+            print '{:<8}'.format('%s/%s' % (len(instance.list_players()),
+                                            instance.server_config['minecraft']['max_players'])),
+        except:
+            print '{:<8}'.format('--/--'),
 
         print {
             'template': '<a href="#" class="status %s" id="%s">%s</a>' % (status, server, 'start'),
@@ -460,6 +464,13 @@ def display_overview():
     else:
         print '----------', filename
 
+    filename = mineos.mc().mineos_config['downloads']['tekkit_jar']
+    filepath = os.path.join(mineos.mc().mineos_config['paths']['mc_path'], 'tekkit', filename)
+    if os.access(filepath, os.F_OK):
+        print mineos.mc.list_build_date(filepath), filename
+    else:
+        print '----------', filename
+
     print
     print '<b>MineOS Scripts</b>:', '<a href="#" class="updatemos">%s</a>' % 'Update MineOS'
     print '{:<18}'.format('server.py'), __version__
@@ -561,6 +572,12 @@ def display_jars():
             </select></td>
         </tr>
         <tr> 
+          <td colspan="2"><label for="tekkit">tekkit</label></td>
+          <td colspan="2"><select name="tekkit" id="tekkit" tabindex="6">
+              %s
+            </select></td>
+        </tr>
+        <tr> 
           <td colspan="2"><label for="c10t">c10t</label></td>
           <td colspan="2"><select name="c10t" id="c10t" tabindex="6">
               %s
@@ -576,6 +593,7 @@ def display_jars():
     </form>''' % (selects_mod('pure'),
                   selects_mod('bukkit'),
                   selects_mod('canary'),
+                  selects_mod('tekkit'),
                   selects_mod('c10t'))
 
 def display_createnew():
