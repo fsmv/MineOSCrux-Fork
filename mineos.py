@@ -217,17 +217,18 @@ class mc:
             filename = instance.mineos_config['downloads']['tekkit_zip']
             mc.check(filename, instance.mineos_config['downloads']['tekkit_ziploc'])
 
-            try:
-                cpath = os.path.join(instance.mc_path, 'tekkit')
-                if not os.path.exists(cpath): os.makedirs(cpath)
-            except:
-                logging.warning('(None) unable to create directory %s', cpath)
-
             if zipfile.is_zipfile(filepath):
                 try:
                     with zipfile.ZipFile(filepath, mode='r') as zipchive:
                         tekkitPath = os.path.join(instance.mc_path, 'tekkit'))
                         shutil.rmtree(tekkitPath)
+                        
+                        try:
+                           cpath = os.path.join(instance.mc_path, 'tekkit')
+                           if not os.path.exists(cpath): os.makedirs(cpath)
+                        except:
+                           logging.warning('(None) unable to create directory %s', cpath)
+                           
                         zipchive.extractall(tekkitPath)
                         logging.info('(None) All tekkit files extracted from %s.' % filename)
                 except:
