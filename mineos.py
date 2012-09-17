@@ -226,7 +226,9 @@ class mc:
             if zipfile.is_zipfile(filepath):
                 try:
                     with zipfile.ZipFile(filepath, mode='r') as zipchive:
-                        zipchive.extractall(os.path.join(instance.mc_path, 'tekkit'))
+                        tekkitPath = os.path.join(instance.mc_path, 'tekkit'))
+                        shutil.rmtree(tekkitPath)
+                        zipchive.extractall(tekkitPath)
                         logging.info('(None) All tekkit files extracted from %s.' % filename)
                 except:
                     raise ArchiveUnexpectedException('None', filename)
