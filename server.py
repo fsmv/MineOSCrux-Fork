@@ -5,7 +5,7 @@
 
 __author__ = "William Dizon"
 __license__ = "GNU GPL v3.0"
-__version__ = "0.4.11a"
+__version__ = "0.4.12"
 __email__ = "wdchromium@gmail.com"
 
 print "Content-Type: text/html"
@@ -115,8 +115,8 @@ def display_initial():
     print '<pre>'
     for filename in [mineos.mc().mineos_config['downloads']['mc_jar'],
                      mineos.mc().mineos_config['downloads']['bukkit_jar'],
-                     mineos.mc().mineos_config['downloads']['tekkit_zip'],
                      mineos.mc().mineos_config['downloads']['canary_zip'],
+                     mineos.mc().mineos_config['downloads']['tekkit_zip'],
                      mineos.mc().mineos_config['downloads']['c10t_tgz']]:
         filepath = os.path.join(mineos.mc().mineos_config['paths']['mc_path'], filename)
         if os.access(filepath, os.F_OK):
@@ -185,9 +185,12 @@ def display_status():
                                                                 '{:<12}'.format(port),
                                                                 colors.get(status)),
 
-        instance = mineos.mc(server)        
-        print '{:<8}'.format('%s/%s' % (len(instance.list_players()),
-                                        instance.server_config['minecraft']['max_players'])),
+        try:
+            instance = mineos.mc(server)        
+            print '{:<8}'.format('%s/%s' % (len(instance.list_players()),
+                                            instance.server_config['minecraft']['max_players'])),
+        except:
+            print '{:<8}'.format('--/--'),
 
         print {
             'template': '<a href="#" class="status %s" id="%s">%s</a>' % (status, server, 'start'),
@@ -563,14 +566,14 @@ def display_jars():
             </select></td>
         </tr>
         <tr> 
-          <td colspan="2"><label for="tekkit">tekkit</label></td>
-          <td colspan="2"><select name="tekkit" id="tekkit" tabindex="6">
+          <td colspan="2"><label for="canary">canary</label></td>
+          <td colspan="2"><select name="canary" id="canary" tabindex="6">
               %s
             </select></td>
         </tr>
-        <tr> 
-          <td colspan="2"><label for="canary">canary</label></td>
-          <td colspan="2"><select name="canary" id="canary" tabindex="6">
+        <tr>
+          <td colspan="2"><label for="tekkit">tekkit</label></td>
+          <td colspan="2"><select name="tekkit" id="tekkit" tabindex="6">
               %s
             </select></td>
         </tr>
@@ -750,7 +753,25 @@ def display_server_config(server_name):
             else:
                 selects.append('<option value="%s">%s</option>' % (mods, mods))
         return ' '.join(selects)
-
+    
+    def selects_mapping(server_name, option):
+        selects = []
+        
+        newinst = mineos.mc(server_name)
+        
+        try:
+            if newinst.server_config['mapping']['map_%s' % option] == 'true':
+                selects.append('<option value="true" SELECTED>true</option>')
+                selects.append('<option value="false">false</option>')
+            else:
+                selects.append('<option value="true">true</option>')
+                selects.append('<option value="false" SELECTED>false</option>')
+        except KeyError:
+            raise mineos.NoOnMappingSelectionException(server_name, os.path.join(newinst.cwd, 'server.config'))
+            selects.append('<option value="true">true</option>')
+            selects.append('<option value="false" SELECTED>false</option>')
+        return ' '.join(selects)
+            
     def selects_onboot(server_name, activity):
         selects = []
 
@@ -838,6 +859,18 @@ def display_server_config(server_name):
             </select></td>
         </tr>
         <tr> 
+          <td colspan="2"><label for="map_c10t">Use c10t</label></td>
+          <td colspan="2"><select name="map_c10t" id="map_c10t" tabindex="6">
+              %s
+            </select></td>
+        </tr>
+        <tr> 
+          <td colspan="2"><label for="map_pigmap">Use pigmap</label></td>
+          <td colspan="2"><select name="map_pigmap" id="map_pigmap" tabindex="6">
+              %s
+            </select></td>
+        </tr>
+        <tr> 
           <td colspan="2">&nbsp</td>
           <td colspan="2"></td>
         </tr>
@@ -867,6 +900,8 @@ def display_server_config(server_name):
                  selects_crontab(server_name, 'archive'),
                  selects_crontab(server_name, 'backup'),
                  selects_crontab(server_name, 'map'),
+                 selects_mapping(server_name, 'c10t'),
+                 selects_mapping(server_name, 'pigmap'),
                  selects_onboot(server_name, 'restore'),
                  selects_onboot(server_name, 'start'))
 
@@ -1062,7 +1097,7 @@ try:
         elif form['action'] == 'restore':
             instance.restore(form['steps'], True)
         elif form['action'] == 'map':
-            instance.mapworld()
+            instance.mapserver()
         elif form['action'] == 'rename':
             instance.rename(form['newname'])
         elif form['action'] == 'import':

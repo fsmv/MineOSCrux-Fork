@@ -5,7 +5,7 @@
 
 __author__ = "William Dizon"
 __license__ = "GNU GPL v3.0"
-__version__ = "0.4.11a"
+__version__ = "0.4.12"
 __email__ = "wdchromium@gmail.com"
 
 import mineos
@@ -29,6 +29,7 @@ try:
     elif argv[1] == 'update':
         mineos.mc.update()
     elif argv[1] == 'update_mineos':
+        mineos.mc.update_configs()
         mineos.mc.update_mineos()
     elif argv[1] == 'update_canary':
         mineos.mc(argv[2]).update_canary()
