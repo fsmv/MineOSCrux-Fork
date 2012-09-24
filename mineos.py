@@ -220,7 +220,7 @@ class mc:
             if zipfile.is_zipfile(filepath):
                 try:
                     with zipfile.ZipFile(filepath, mode='r') as zipchive:
-                        tekkitPath = os.path.join(instance.mc_path, 'tekkit'))
+                        tekkitPath = os.path.join(instance.mc_path, 'tekkit')
                         shutil.rmtree(tekkitPath)
                         
                         try:
